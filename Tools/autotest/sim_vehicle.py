@@ -880,16 +880,16 @@ def start_mavproxy(opts, stuff):
 
     for i in instances:
         if not opts.no_extra_ports:
-            ports = [14550 + 10 * i]
+            ports = [14550,14551]
             for port in ports:
                 if under_vagrant():
                     # We're running inside of a vagrant guest; forward our
                     # mavlink out to the containing host OS
                     cmd.extend(["--out", "10.0.2.2:" + str(port)])
-                elif wsl2_host_ip_str:
+                # elif wsl2_host_ip_str:
                     # We're running WSL2; forward our
                     # mavlink out to the containing host Windows OS
-                    cmd.extend(["--out", str(wsl2_host_ip_str) + ":" + str(port)])
+                    # cmd.extend(["--out", str(wsl2_host_ip_str) + ":" + str(port)])
                 else:
                     cmd.extend(["--out", "127.0.0.1:" + str(port)])
 

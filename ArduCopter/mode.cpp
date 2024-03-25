@@ -179,6 +179,10 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+        case Mode::Number::WALL:
+            ret = &mode_wall;
+            break;
+
         default:
             break;
     }
