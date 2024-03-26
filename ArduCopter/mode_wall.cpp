@@ -33,29 +33,38 @@ void ModeWall::run(){
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
-    //get pilot desired climb rate
-    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    //safe check
-    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+
+    //                  //
+    // position control //
+    //                  //
 
     //perform the xy position controller
     //  It will set the target_pitch and target_roll
     //  Accel-to-lean do so
     pos_control->update_xy_controller();
 
+
+    //get pilot desired climb rate
+    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    //safe check
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+
     //Send the command climb rate to the position controller
     pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
 
+    //                  //
+    // attitude control //
+    //                  //
     //get the target_pitch and target_roll with safty check
-    float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, MIN(attitude_control->lean_angle_max_cd(), pos_control->get_lean_angle_max_cd()) * (2.0f/3.0f), attitude_control->get_althold_lean_angle_max_cd());
+    //float target_roll = 0.0f, target_pitch = 0.0f;
+    // get_pilot_desired_lean_angles(target_roll, target_pitch, MIN(attitude_control->lean_angle_max_cd(), pos_control->get_lean_angle_max_cd()) * (2.0f/3.0f), attitude_control->get_althold_lean_angle_max_cd());
 
     //Then we need to call the attitude controller
     //  A ten degrees feed back is require
-    target_pitch = MAX(0.1744,target_pitch);
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, 0);
+    //target_pitch = MIN(-10.0f,target_pitch);
+    // attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, 0);
 
-    //Now call the pilot's throttle
-    attitude_control->set_throttle_out(get_pilot_desired_throttle(), true, g.throttle_filt);
+    pos_control->update_z_controller();
+
 }
 
