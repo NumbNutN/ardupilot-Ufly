@@ -17,8 +17,11 @@ bool ModeWall::init(bool ignore_checks)
     //set as a constant position target
     float wall_pos_x = curr_pos.x;
     float wall_pos_y = curr_pos.y;
-    //we set the position desire to the position controller
+    
+    //  we set the position desire to the position controller
+    //  only the position that is parallel with the wall direction is valuable
     pos_control->set_pos_target_xy_cm(wall_pos_x, wall_pos_y);
+
 
     return true;
 }
@@ -34,13 +37,11 @@ void ModeWall::run(){
     update_simple_mode();
 
 
-    //                  //
+    //  /   /   /   /   //
     // position control //
-    //                  //
+    //  /   /   /   /   //
 
-    //perform the xy position controller
-    //  It will set the target_pitch and target_roll
-    //  Accel-to-lean do so
+    //  perform the xy position controller  It will output a disired thrust vector
     pos_control->update_xy_controller();
 
 
@@ -52,17 +53,24 @@ void ModeWall::run(){
     //Send the command climb rate to the position controller
     pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
 
-    //                  //
-    // attitude control //
-    //                  //
-    //get the target_pitch and target_roll with safty check
-    //float target_roll = 0.0f, target_pitch = 0.0f;
-    // get_pilot_desired_lean_angles(target_roll, target_pitch, MIN(attitude_control->lean_angle_max_cd(), pos_control->get_lean_angle_max_cd()) * (2.0f/3.0f), attitude_control->get_althold_lean_angle_max_cd());
 
-    //Then we need to call the attitude controller
-    //  A ten degrees feed back is require
-    //target_pitch = MIN(-10.0f,target_pitch);
-    // attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, 0);
+    //  /   /   /   /   //
+    // attitude control //
+    //  /   /   /   /   //
+
+    Vector3f thrust_vec = pos_control->get_thrust_vector(); 
+    // set the desired body frame acceleration on x axis to be constant
+
+    // ahrs.get_yaw() in radian
+    Vector3f pitch_desired = {0,0.174f,ahrs.get_yaw()};
+
+    //convert to the accel desired in NEU frame
+    Vector3f accel_y_des = pos_control->lean_angles_to_accel(pitch_desired);
+    accel_y_des.z = 0;
+    thrust_vec += accel_y_des;
+
+    //now call the attitude controller
+    attitude_control->input_thrust_vector_rate_heading(thrust_vec, 0);
 
     pos_control->update_z_controller();
 
