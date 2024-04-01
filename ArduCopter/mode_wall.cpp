@@ -59,6 +59,13 @@ void ModeWall::run(){
     //  /   /   /   /   //
 
     Vector3f thrust_vec = pos_control->get_thrust_vector(); 
+
+    Vector3f thrust_vec_flat = {
+        0,
+        -thrust_vec.x * ahrs.sin_yaw() + thrust_vec.y * ahrs.cos_yaw(),
+        thrust_vec.z
+    };
+
     // set the desired body frame acceleration on x axis to be constant
 
     // ahrs.get_yaw() in radian
@@ -67,10 +74,16 @@ void ModeWall::run(){
     //convert to the accel desired in NEU frame
     Vector3f accel_y_des = pos_control->lean_angles_to_accel(pitch_desired);
     accel_y_des.z = 0;
-    thrust_vec += accel_y_des;
+    thrust_vec_flat += accel_y_des;
+
+    Vector3f thrust_vec_fixed = {
+        thrust_vec_flat.x * ahrs.cos_yaw() - thrust_vec_flat.y * ahrs.sin_yaw(),
+        thrust_vec_flat.x * ahrs.sin_yaw() + thrust_vec_flat.y * ahrs.cos_yaw(),
+        thrust_vec_flat.z
+    };
 
     //now call the attitude controller
-    attitude_control->input_thrust_vector_rate_heading(thrust_vec, 0);
+    attitude_control->input_thrust_vector_rate_heading(thrust_vec_fixed, 0);
 
     pos_control->update_z_controller();
 
